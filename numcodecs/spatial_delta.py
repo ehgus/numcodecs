@@ -112,10 +112,10 @@ class SpatialDelta(Codec):
 
     def get_config(self):
         # override to handle encoding dtypes
-        return dict(id=self.codec_id, dtype=self.dtype.str, astype=self.astype.str)
+        return dict(id=self.codec_id, axis=self.axis, dtype=self.dtype.str, astype=self.astype.str)
 
     def __repr__(self):
-        r = f'{type(self).__name__}(dtype={self.dtype.str!r}, axis={self.axis}'
+        r = f'{type(self).__name__}(axis={self.axis}, dtype={self.dtype.str!r}'
         if self.astype != self.dtype:
             r += f', astype={self.astype.str!r}'
         r += ')'
