@@ -76,20 +76,24 @@ class SpatialDelta(Codec):
         # normalise input
         arr = ensure_ndarray(buf).view(self.dtype)
 
-        # flatten to simplify implementation
-        # arr = arr.reshape(-1, order='A')
-
         # setup encoded output
         enc = np.empty_like(arr, dtype = self.astype)
 
         # set first element
-        slice_idx = [slice(0, None) for _ in range(arr.ndim)]
-        slice_idx[self.axis] = slice(0,1)
-        enc[*slice_idx] = arr[*slice_idx]
+        nd = arr.ndim
+        init_slice = [slice(None)] * nd
+        init_slice[self.axis] = slice(0, 1)
+        init_slice = tuple(init_slice)
+        enc[init_slice] = arr[init_slice]
 
         # compute differences
-        slice_idx[self.axis] = slice(1, None)
-        enc[*slice_idx] = np.diff(arr, axis = self.axis)
+        slice1 = [slice(None)] * nd
+        slice2 = [slice(None)] * nd
+        slice1[self.axis] = slice(1, None)
+        slice2[self.axis] = slice(None, -1)
+        slice1 = tuple(slice1)
+        slice2 = tuple(slice2)
+        np.subtract(arr[slice1], arr[slice2], out = enc[slice1])
 
         return enc
 
