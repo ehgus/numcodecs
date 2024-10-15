@@ -79,6 +79,10 @@ from numcodecs.delta import Delta
 
 register_codec(Delta)
 
+from numcodecs.spatial_delta import SpatialDelta
+
+register_codec(SpatialDelta)
+
 from numcodecs.quantize import Quantize
 
 register_codec(Quantize)
