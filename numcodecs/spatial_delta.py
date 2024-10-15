@@ -10,8 +10,8 @@ class SpatialDelta(Codec):
 
     Parameters
     ----------
-    axis : number
-        Axis to compute delta
+    axes : number
+        Axes to compute delta
     dtype : dtype
         Data type to use for decoded data.
     astype : dtype, optional
@@ -31,7 +31,7 @@ class SpatialDelta(Codec):
     >>> import numcodecs
     >>> import numpy as np
     >>> x = np.arange(27, dtype = 'i2').reshape(3,3,3)
-    >>> codec = numcodecs.SpatialDelta(axis = 1,dtype='i2', astype='i1')
+    >>> codec = numcodecs.SpatialDelta(axes = (1,),dtype='i2', astype='i1')
     >>> y = codec.encode(x)
     >>> y
     array([[[ 0,  1,  2],
@@ -62,8 +62,8 @@ class SpatialDelta(Codec):
 
     codec_id = 'spatial_delta'
 
-    def __init__(self, axis, dtype, astype=None):
-        self.axis = axis
+    def __init__(self, axes, dtype, astype=None):
+        self.axes = axes
         self.dtype = np.dtype(dtype)
         if astype is None:
             self.astype = self.dtype
@@ -82,18 +82,21 @@ class SpatialDelta(Codec):
         # set first element
         nd = arr.ndim
         init_slice = [slice(None)] * nd
-        init_slice[self.axis] = slice(0, 1)
+        axis = self.axes[0]
+        init_slice[axis] = slice(0, 1)
         init_slice = tuple(init_slice)
         enc[init_slice] = arr[init_slice]
 
         # compute differences
-        slice1 = [slice(None)] * nd
-        slice2 = [slice(None)] * nd
-        slice1[self.axis] = slice(1, None)
-        slice2[self.axis] = slice(None, -1)
-        slice1 = tuple(slice1)
-        slice2 = tuple(slice2)
-        np.subtract(arr[slice1], arr[slice2], out = enc[slice1])
+        for axis in self.axes:
+            slice1 = [slice(None)] * nd
+            slice2 = [slice(None)] * nd
+            slice1[axis] = slice(1, None)
+            slice2[axis] = slice(None, -1)
+            slice1 = tuple(slice1)
+            slice2 = tuple(slice2)
+            np.subtract(arr[slice1], arr[slice2], out = enc[slice1])
+            arr = enc
 
         return enc
 
@@ -107,7 +110,9 @@ class SpatialDelta(Codec):
         dec = np.empty_like(enc, dtype=self.dtype)
 
         # decode differences
-        np.cumsum(enc, axis = self.axis, out=dec)
+        for axis in self.axes:
+            np.cumsum(enc, axis = axis, out = dec)
+            enc = dec
 
         # handle output
         out = ndarray_copy(dec, out)
@@ -116,10 +121,10 @@ class SpatialDelta(Codec):
 
     def get_config(self):
         # override to handle encoding dtypes
-        return dict(id=self.codec_id, axis=self.axis, dtype=self.dtype.str, astype=self.astype.str)
+        return dict(id=self.codec_id, axes=self.axes, dtype=self.dtype.str, astype=self.astype.str)
 
     def __repr__(self):
-        r = f'{type(self).__name__}(axis={self.axis}, dtype={self.dtype.str!r}'
+        r = f'{type(self).__name__}(axes={self.axes}, dtype={self.dtype.str!r}'
         if self.astype != self.dtype:
             r += f', astype={self.astype.str!r}'
         r += ')'
